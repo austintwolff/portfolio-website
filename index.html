@@ -93,7 +93,10 @@
     <section id="projects" class="projects">
         <div class="container">
             <h2 class="section-title">Featured Projects</h2>
-            <div class="projects-grid">
+            <p class="projects-subtitle">Scroll or swipe to explore →</p>
+            <div class="projects-wrapper">
+                <button class="project-nav project-nav-left" id="scrollLeft">‹</button>
+                <div class="projects-grid" id="projectsGrid">
 
                 <!-- Project 1: Active Listener Copilot -->
                 <div class="project-card">
@@ -156,8 +159,12 @@
                             </ul>
                         </div>
                         <div class="project-links">
+                            <a href="https://github.com/austintwolff/spotify-ai-playlist-generator#installation" class="btn btn-small btn-primary" target="_blank">Setup Guide</a>
                             <a href="https://github.com/austintwolff/spotify-ai-playlist-generator" class="btn btn-small btn-secondary" target="_blank">GitHub</a>
                         </div>
+                        <p style="font-size: 0.75rem; color: #9ca3af; margin-top: 10px; font-style: italic;">
+                            * Flask app - requires local setup with Spotify & OpenAI API keys
+                        </p>
                     </div>
                 </div>
 
@@ -211,6 +218,8 @@
                 </div>
 
             </div>
+            <button class="project-nav project-nav-right" id="scrollRight">›</button>
+        </div>
         </div>
     </section>
 

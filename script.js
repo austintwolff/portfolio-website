@@ -11,6 +11,43 @@ hamburger.addEventListener('click', () => {
     hamburger.classList.toggle('active');
 });
 
+// ============================================================================
+// Project Carousel Navigation
+// ============================================================================
+
+const projectsGrid = document.getElementById('projectsGrid');
+const scrollLeftBtn = document.getElementById('scrollLeft');
+const scrollRightBtn = document.getElementById('scrollRight');
+
+if (scrollLeftBtn && scrollRightBtn && projectsGrid) {
+    scrollLeftBtn.addEventListener('click', () => {
+        projectsGrid.scrollBy({
+            left: -420,
+            behavior: 'smooth'
+        });
+    });
+
+    scrollRightBtn.addEventListener('click', () => {
+        projectsGrid.scrollBy({
+            left: 420,
+            behavior: 'smooth'
+        });
+    });
+
+    // Hide/show arrows based on scroll position
+    function updateArrows() {
+        const maxScroll = projectsGrid.scrollWidth - projectsGrid.clientWidth;
+        scrollLeftBtn.style.opacity = projectsGrid.scrollLeft <= 0 ? '0.3' : '1';
+        scrollLeftBtn.style.cursor = projectsGrid.scrollLeft <= 0 ? 'default' : 'pointer';
+        scrollRightBtn.style.opacity = projectsGrid.scrollLeft >= maxScroll ? '0.3' : '1';
+        scrollRightBtn.style.cursor = projectsGrid.scrollLeft >= maxScroll ? 'default' : 'pointer';
+    }
+
+    projectsGrid.addEventListener('scroll', updateArrows);
+    window.addEventListener('resize', updateArrows);
+    updateArrows();
+}
+
 // Close mobile menu when clicking on a link
 const navLinks = document.querySelectorAll('.nav-link');
 

@@ -357,13 +357,81 @@ section {
 
 .projects {
     background: var(--bg-primary);
+    overflow: hidden;
+}
+
+.projects-subtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    margin-top: -20px;
+    margin-bottom: 10px;
+    font-size: 0.875rem;
+}
+
+.projects-wrapper {
+    position: relative;
+    margin-top: var(--spacing-lg);
+}
+
+.project-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(99, 102, 241, 0.9);
+    color: white;
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 2rem;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.project-nav:hover {
+    background: rgba(79, 70, 229, 1);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.project-nav-left {
+    left: -25px;
+}
+
+.project-nav-right {
+    right: -25px;
 }
 
 .projects-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    display: flex;
     gap: var(--spacing-lg);
-    margin-top: var(--spacing-lg);
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 20px 0 40px 0;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+.projects-grid::-webkit-scrollbar {
+    height: 10px;
+}
+
+.projects-grid::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 10px;
+}
+
+.projects-grid::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border-radius: 10px;
+}
+
+.projects-grid::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, var(--primary-dark), var(--secondary-color));
 }
 
 .project-card {
@@ -371,12 +439,16 @@ section {
     border-radius: 16px;
     overflow: hidden;
     box-shadow: var(--shadow-md);
-    transition: var(--transition);
+    transition: all 0.3s ease;
     border: 1px solid var(--border-color);
+    min-width: 380px;
+    max-width: 380px;
+    flex-shrink: 0;
+    scroll-snap-align: center;
 }
 
 .project-card:hover {
-    transform: translateY(-8px);
+    transform: translateY(-8px) scale(1.02);
     box-shadow: var(--shadow-xl);
 }
 
@@ -582,7 +654,20 @@ section {
     }
 
     .projects-grid {
-        grid-template-columns: 1fr;
+        padding: 20px 0 30px 0;
+    }
+
+    .project-card {
+        min-width: 300px;
+        max-width: 300px;
+    }
+
+    .project-nav {
+        display: none;
+    }
+
+    .projects-subtitle {
+        font-size: 0.8125rem;
     }
 
     .contact-links {
