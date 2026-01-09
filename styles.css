@@ -290,8 +290,24 @@ section {
 }
 
 .about-content {
-    max-width: 800px;
+    max-width: 900px;
     margin: 0 auto;
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: var(--spacing-lg);
+    align-items: start;
+}
+
+.about-image {
+    position: relative;
+}
+
+.headshot {
+    width: 100%;
+    height: auto;
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    object-fit: cover;
 }
 
 .about-text p {
@@ -576,6 +592,16 @@ section {
     .contact-link {
         width: 100%;
         justify-content: center;
+    }
+
+    .about-content {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+
+    .about-image {
+        max-width: 250px;
+        margin: 0 auto;
     }
 
     section {
