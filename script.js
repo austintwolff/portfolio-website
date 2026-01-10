@@ -35,7 +35,7 @@ if (scrollLeftBtn && scrollRightBtn && projectsGrid) {
     });
 
     // Hide/show arrows based on scroll position
-    function updateArrows() {
+    function updateProjectArrows() {
         const maxScroll = projectsGrid.scrollWidth - projectsGrid.clientWidth;
         scrollLeftBtn.style.opacity = projectsGrid.scrollLeft <= 0 ? '0.3' : '1';
         scrollLeftBtn.style.cursor = projectsGrid.scrollLeft <= 0 ? 'default' : 'pointer';
@@ -43,9 +43,46 @@ if (scrollLeftBtn && scrollRightBtn && projectsGrid) {
         scrollRightBtn.style.cursor = projectsGrid.scrollLeft >= maxScroll ? 'default' : 'pointer';
     }
 
-    projectsGrid.addEventListener('scroll', updateArrows);
-    window.addEventListener('resize', updateArrows);
-    updateArrows();
+    projectsGrid.addEventListener('scroll', updateProjectArrows);
+    window.addEventListener('resize', updateProjectArrows);
+    updateProjectArrows();
+}
+
+// ============================================================================
+// Experience Carousel Navigation
+// ============================================================================
+
+const experienceGrid = document.getElementById('experienceGrid');
+const expScrollLeftBtn = document.getElementById('expScrollLeft');
+const expScrollRightBtn = document.getElementById('expScrollRight');
+
+if (expScrollLeftBtn && expScrollRightBtn && experienceGrid) {
+    expScrollLeftBtn.addEventListener('click', () => {
+        experienceGrid.scrollBy({
+            left: -460,
+            behavior: 'smooth'
+        });
+    });
+
+    expScrollRightBtn.addEventListener('click', () => {
+        experienceGrid.scrollBy({
+            left: 460,
+            behavior: 'smooth'
+        });
+    });
+
+    // Hide/show arrows based on scroll position
+    function updateExpArrows() {
+        const maxScroll = experienceGrid.scrollWidth - experienceGrid.clientWidth;
+        expScrollLeftBtn.style.opacity = experienceGrid.scrollLeft <= 0 ? '0.3' : '1';
+        expScrollLeftBtn.style.cursor = experienceGrid.scrollLeft <= 0 ? 'default' : 'pointer';
+        expScrollRightBtn.style.opacity = experienceGrid.scrollLeft >= maxScroll ? '0.3' : '1';
+        expScrollRightBtn.style.cursor = experienceGrid.scrollLeft >= maxScroll ? 'default' : 'pointer';
+    }
+
+    experienceGrid.addEventListener('scroll', updateExpArrows);
+    window.addEventListener('resize', updateExpArrows);
+    updateExpArrows();
 }
 
 // Close mobile menu when clicking on a link
@@ -110,8 +147,8 @@ const observer = new IntersectionObserver((entries) => {
     });
 }, observerOptions);
 
-// Observe all project cards and sections
-document.querySelectorAll('.project-card, .about-content, .contact-content').forEach(el => {
+// Observe all project cards, experience cards, and sections
+document.querySelectorAll('.project-card, .experience-card, .about-content, .contact-content').forEach(el => {
     el.style.opacity = '0';
     el.style.transform = 'translateY(30px)';
     el.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
