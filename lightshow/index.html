@@ -2389,7 +2389,7 @@ async function countPlay() { if (transport.source !== 'file' || countedPlays.has
 function play() {
   countPlay();
   ensureAudio(); if (transport.playing) return; nextClick = 0;
-  if (!Number.isFinite(transport.pos) || transport.pos >= transport.length - 0.05) transport.pos = 0;
+  if (!Number.isFinite(transport.pos) || transport.pos >= transport.length - 0.05) transport.pos = 0; transport.pos = Math.max(0, transport.pos); // a pause inside the 50 ms start latency left a negative position, and start() rejects a negative offset
   transport.startAt = actx.currentTime + 0.05; transport.playing = true;
   if (transport.source === 'file' && transport.buffer) {
     const n = actx.createBufferSource(); n.buffer = transport.buffer; n.connect(master); n.start(transport.startAt, transport.pos); transport.node = n;
@@ -2397,7 +2397,7 @@ function play() {
   $('play').textContent = '❚❚';
 }
 function pause() {
-  if (!transport.playing) return; transport.pos = now(); transport.playing = false;
+  if (!transport.playing) return; transport.pos = Math.max(0, now()); transport.playing = false;
   if (transport.node) { try { transport.node.stop(); } catch (e) {} transport.node = null; }
   $('play').textContent = '▶';
 }
