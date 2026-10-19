@@ -68,6 +68,7 @@
   body.immersive{cursor:none}
   #hint{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:7;background:var(--panel);border:1px solid var(--line);padding:8px 14px;border-radius:2px;color:var(--ink-dim);font-size:11px;letter-spacing:.08em;text-transform:uppercase;transition:opacity .6s;pointer-events:none}
   @media (max-width:820px){.section{display:none}#track{display:none}}
+.hud.top .plays{font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.5;align-self:center;margin-right:12px;white-space:nowrap}
 </style>
 
 <div id="stage"></div>
@@ -76,6 +77,7 @@
 <div id="err"></div>
 
 <header class="hud top">
+  <div class="plays" id="plays" title="Songs played here, by everyone, since launch" hidden></div>
   <nav class="pills" id="rigs">
     <button data-rig="justice" class="on">Cross</button>
     <button data-rig="chroma">Glow</button>
@@ -109,13 +111,12 @@
   <div class="grp"><label>Haze <input id="haze" type="range" min="0" max="2" step="0.01" value="0.8"></label></div>
   <div class="grp"><label>Motion <input id="motion" type="range" min="0" max="1" step="0.01" value="0.35" title="How much the moving lights travel between formations"></label></div>
   <div class="grp"><label><input id="bloom" type="checkbox" checked> Bloom</label><label><input id="refl" type="checkbox" checked> Floor reflection</label><label><input id="mirror" type="checkbox" checked> Mirror wall</label></div>
-  <div class="grp"><label>Palette <select id="palette"><option value="track">From the track</option><option value="justice">Cold white</option></select></label></div>
-  <div class="grp"><span>Grid</span><input id="bpm" value="124" title="BPM"><input id="offset" value="0.00" title="first downbeat, seconds"><button id="offM" title="one beat earlier">−1</button><button id="offP" title="one beat later">+1</button><button id="bpmDown" title="÷1.5">÷1.5</button><button id="bpmUp" title="×1.5">×1.5</button></div>
-  <div class="grp"><span>Sync</span><button id="syncM">−10</button><span id="syncV" class="num">0 ms</span><button id="syncP">+10</button><label><input id="click" type="checkbox"> Click</label></div>
-  <div class="grp"><button id="loadBtn">Load a track</button><button id="sheetBtn">Cue sheet</button></div>
-  <div class="grp status" id="src">Demo synth · 124 BPM</div>
-  <div class="grp status" id="plays" title="Songs played on this page, by everyone, since launch" style="opacity:.5" hidden></div>
-  <div class="grp keys">B blackout · S strobe · F flash · R red · 1–5 cameras · I immersive · space play</div>
+  <div class="grp" hidden><label>Palette <select id="palette"><option value="track">From the track</option><option value="justice">Cold white</option></select></label></div>
+  <div class="grp" hidden><span>Grid</span><input id="bpm" value="124" title="BPM"><input id="offset" value="0.00" title="first downbeat, seconds"><button id="offM" title="one beat earlier">−1</button><button id="offP" title="one beat later">+1</button><button id="bpmDown" title="÷1.5">÷1.5</button><button id="bpmUp" title="×1.5">×1.5</button></div>
+  <div class="grp" hidden><span>Sync</span><button id="syncM">−10</button><span id="syncV" class="num">0 ms</span><button id="syncP">+10</button><label><input id="click" type="checkbox"> Click</label></div>
+  <div class="grp" hidden><button id="loadBtn">Load a track</button><button id="sheetBtn">Cue sheet</button></div>
+  <div class="grp status" id="src" hidden>Demo synth · 124 BPM</div>
+  <div class="grp keys" hidden>B blackout · S strobe · F flash · R red · 1–5 cameras · I immersive · space play</div>
 </aside>
 
 <section class="drawer" id="sheet" hidden>
@@ -1040,7 +1041,17 @@ const PALETTES = {
   justice: { primary: COOL, accent: COOL, red: [1, 0.05, 0.03], amber: AMBER, teal: TEAL },
   track:   { primary: hue2rgb(0.6), accent: hue2rgb(0.96), red: [1, 0.05, 0.03] },
 };
-function setTrackPalette(hue, ratio) { PALETTES.track = { primary: hue2rgb(hue), accent: hue2rgb(hue + 0.36), red: [1, 0.05, 0.03], amber: AMBER, teal: TEAL, white: [1, 1, 1] }; PALETTES.justice.white = [1, 1, 1]; PALETTES.justice.accent = (ratio ?? 1) > 1.12 ? AMBER : COOL; } // bright tracks go gold at the main drop on the Cross rig, as the warm songs did in Chile
+function setTrackPalette(hue, ratio, bpm) { // colour science: the track's hue picks a scheme, and every colour on the rig comes from that scheme
+  const h = frac(hue), seed = Math.floor((hue * 360 || 0) * 97 + (bpm || 120) * 3) % 1000; // the same seed autoProgram uses
+  const kinds = ['complementary', 'analogous', 'split', 'triadic', 'mono']; let scheme = kinds[seed % 5]; if (seed % 11 === 0) scheme = 'rainbow'; // rainbow is the rare one
+  const F = frac; let accent, hues;
+  if (scheme === 'complementary') { accent = hue2rgb(h + 0.5); hues = [h, F(h + 0.5), NaN, h]; }
+  else if (scheme === 'analogous') { accent = hue2rgb(h + 0.08); hues = [F(h - 0.08), h, F(h + 0.08), NaN]; }
+  else if (scheme === 'split') { accent = hue2rgb(h + 0.58); hues = [h, F(h + 0.42), F(h + 0.58), NaN]; }
+  else if (scheme === 'triadic') { accent = hue2rgb(h + 1 / 3); hues = [h, F(h + 1 / 3), F(h + 2 / 3), NaN]; }
+  else if (scheme === 'mono') { accent = hue2rgb(h, 0.45, 0.74); hues = [h, NaN, h, NaN]; }
+  else { accent = hue2rgb(h + 0.5); hues = HUESETS.festival; }
+  PALETTES.track = { primary: hue2rgb(h), accent, red: [1, 0.05, 0.03], amber: AMBER, teal: TEAL, white: [1, 1, 1], hues, scheme }; PALETTES.justice.white = [1, 1, 1]; PALETTES.justice.accent = (ratio ?? 1) > 1.12 ? AMBER : COOL; } // bright tracks go gold at the main drop on the Cross rig, as the warm songs did in Chile
 let palette = 'track';
 const defaultTint = () => palette === 'track' ? PALETTES.track.primary : COOL;
 const shiftHue = (col, sh) => { if (!sh || palette === 'justice') return col; const c = new THREE.Color(col[0], col[1], col[2]); const hsl = {}; c.getHSL(hsl); if (hsl.s < 0.15) return col; c.setHSL(frac(hsl.h + sh), hsl.s, hsl.l); return [c.r, c.g, c.b]; };
@@ -1079,7 +1090,7 @@ L.tob = (c, p) => {
     S.tobI[i] += v * c.w;
     if (p.face != null) S.tobFace[i] = p.face;
     if (p.rainbow) S.tobRainbow = { speed: p.rainbowSpeed ?? 0.05, spread: p.rainbowSpread ?? 1 };
-    if (p.spectrum) S.tobSpectrum = { hues: typeof p.spectrum === 'string' ? HUESETS[p.spectrum] : HUESETS.pastel, rate: p.spectrumRate ?? 0.5, density: p.spectrumDensity ?? 0.5 };
+    if (p.spectrum) S.tobSpectrum = { hues: typeof p.spectrum === 'string' ? resolveHues(p.spectrum) : (Array.isArray(p.spectrum) ? p.spectrum : resolveHues('pastel')), rate: p.spectrumRate ?? 0.5, density: p.spectrumDensity ?? 0.5 };
     if (p.pix) for (let k = 0; k < 12; k++) {
       const u = k / 12; let m = 1;
       if (p.pix === 'chase') m = frac(u - c.beat * (p.pixRate ?? 1) + (b.col % 2 ? 0.5 : 0)) < 0.25 ? 1 : 0;
@@ -1151,12 +1162,13 @@ function headLook(kind, arr, keyI, keyPan, keyTilt, keyFace) {
       if (p.cross) pan = (isNaN(pan) ? 0 : pan) + (k % 2 ? -1 : 1) * p.cross; // beams cross each other: the star from the roof
       if (!isNaN(pan)) S[keyPan][i] = pan * DEG; if (!isNaN(tilt)) S[keyTilt][i] = -tilt * DEG;
       if (keyFace && p.face != null) S[keyFace][i] = p.face;
-      if (p.hues && HUEKEY[kind]) { const hs = typeof p.hues === 'string' ? HUESETS[p.hues] : p.hues; if (hs && hs.length) S[HUEKEY[kind]][i] = hs[(k + Math.floor(c.beat * (p.hueRate ?? 0))) % hs.length]; }
+      if (p.hues && HUEKEY[kind]) { const hs = typeof p.hues === 'string' ? resolveHues(p.hues) : p.hues; if (hs && hs.length) S[HUEKEY[kind]][i] = hs[(k + Math.floor(c.beat * (p.hueRate ?? 0))) % hs.length]; }
     }
   };
 }
 // coloured beams, as the Accor set mixes them: a few named sets, hue values 0-1 (NaN = white in the current tint)
 const HUEKEY = { bar: 'barHue', riv: 'rivHue', front: 'frontHue' };
+const resolveHues = name => (palette === 'track' && PALETTES.track.hues && (name === 'festival' || name === 'pastel' || name === 'warm')) ? PALETTES.track.hues : HUESETS[name]; // the colourful named sets become the track's own scheme; 'cool' and 'amber' stay literal
 const HUESETS = { warm: [0.12, NaN, 0.07, NaN, 0.14], pastel: [0.5, 0.86, 0.14, NaN, 0.6], festival: [0.14, 0.52, 0.86, 0.07, NaN, 0.6], amber: [0.1, 0.12, 0.08], cool: [0.55, NaN, 0.62] };
 L.bar = headLook('bar', null, 'barI', 'barPan', 'barTilt');
 L.riv = headLook('riv', null, 'rivI', 'rivPan', 'rivTilt');
@@ -2139,12 +2151,12 @@ function autoProgram(an) {
   const push = (at, len, look, p = {}) => rows.push([+at.toFixed(2), +len.toFixed(2), look, p]);
   let gi = 0, bi = 0, ci = 0, ph = 0, haloLasers = 0; const variantOf = {};
   const seed = Math.floor((an.hue || 0) * 97 + (an.bpm || 120) * 3) % 1000; const rot = (arr, k) => arr.map((_, i) => arr[(i + k) % arr.length]);
-  const colourSong = seed % 3 === 0, hueSet = ['festival', 'pastel', 'warm'][seed % 3];
+  const colourSong = seed % 2 === 0, hueSet = 'festival'; // 'festival' resolves to the track's own colour scheme; rainbow only when the scheme is rainbow
   const specialKind = ['red', 'gold', 'white', 'spectrum'][seed % 4]; // the late-song special: Justice's red is one of four, not the rule
   const AIMS = rot(['fan', 'converge', 'split', 'star', 'up', 'out'], seed % 6), PIXES = rot(['chase', 'checker', 'rows', 'cols', 'pods', 'bar1', 'center', 'sparkle'], seed % 8), PATS = rot(['kick', 'pingpong', 'fill', 'mirror', 'sweep', 'offbeat', 'count'], seed % 7);
   const GROOVE_FORMS = rot(['wall', 'wings', 'columns', 'arcs', 'ceiling', 'pyramid', 'bar', 'widegrid', 'cluster', 'bird', 'x', 'stairs', 'tunnel', 'ring'], seed % 14), BREAK_FORMS = rot(['dome', 'scatter', 'line'], seed % 3), INTRO_FORM = ['line', 'home', 'ceiling'][seed % 3], MAIN_FORM = seed % 2 ? 'cross' : 'wall';
   let gf = 0, bf = 0, lastForm = null;
-  const frontSet = new Set(); { let mainI = -1, mainE = 0; segs.forEach((sg, i) => { if (sg.drop && sg.main) { mainI = i; mainE = avg(E, sg.at - 1, sg.at - 1 + sg.len); } }); if (mainI >= 0) frontSet.add(mainI); let bi2 = -1, bE = 0; segs.forEach((sg, i) => { if (sg.drop && !sg.main) { const e = avg(E, sg.at - 1, sg.at - 1 + sg.len); if (e > bE) { bE = e; bi2 = i; } } }); if (bi2 >= 0 && (mainI < 0 || bE >= 0.92 * mainE)) frontSet.add(bi2); if (mainE < 0.8 || seed % 3 === 2) frontSet.clear(); } // the jaws: only for the most energetic drops, and not in every song
+  const frontSet = new Set(); { let mainI = -1, mainE = 0; segs.forEach((sg, i) => { if (sg.drop && sg.main) { mainI = i; mainE = avg(E, sg.at - 1, sg.at - 1 + sg.len); } }); if (mainI >= 0) frontSet.add(mainI); let bi2 = -1, bE = 0; segs.forEach((sg, i) => { if (sg.drop && !sg.main) { const e = avg(E, sg.at - 1, sg.at - 1 + sg.len); if (e > bE) { bE = e; bi2 = i; } } }); if (bi2 >= 0 && mainI >= 0 && bE >= mainE && segs[bi2].t === 'peak') frontSet.add(bi2); /* a second mouth only when another peak drop is at least as loud as the main one */ if (mainE < 0.85 || seed % 2 === 1) frontSet.clear(); } // the jaws: only for the most energetic drops, and not in every song
   const accentHue = frac((an.hue || 0) / 360 + 0.36); const contrast = (seed >> 2) % 2 === 0; // top jaw in a second colour on some songs // structure index → variant, so a returning section brings its look back
   rows.push(['//', 0, 'Auto-programmed from the track analysis · ' + an.bpm + ' BPM · ' + nB + ' bars · one scheme, accent at the main drop, harmony nudges the hue', {}]);
   push(1, nB + 8, 'haze', { v: 1 });
@@ -2368,7 +2380,7 @@ function tickClick() {
 }
 // a tiny public play counter (Abacus, a free counting API): one hit per track per visit; fails silently where fetch is blocked
 const COUNTER = 'https://abacus.jasoncameron.dev', COUNTER_NS = 'hyperdrama-rig', COUNTER_KEY = 'plays'; const countedPlays = new Set();
-function showPlays(n) { if (!(n > 0)) return; const el = $('plays'); el.hidden = false; el.textContent = n.toLocaleString() + (n === 1 ? ' play' : ' plays'); }
+function showPlays(n) { if (!(n > 0)) return; const el = $('plays'); el.hidden = false; el.textContent = n.toLocaleString() + (n === 1 ? ' song played' : ' songs played'); }
 async function countPlay() { if (transport.source !== 'file' || countedPlays.has(transport.name)) return; countedPlays.add(transport.name); try { const r = await fetch(COUNTER + '/hit/' + COUNTER_NS + '/' + COUNTER_KEY, { cache: 'no-store' }); showPlays((await r.json()).value); } catch (e) {} }
 (async () => { try { const r = await fetch(COUNTER + '/get/' + COUNTER_NS + '/' + COUNTER_KEY, { cache: 'no-store' }); showPlays((await r.json()).value); } catch (e) {} })();
 function play() {
@@ -2412,7 +2424,7 @@ async function loadFile(file, opts = {}) {
     const buf = await actx.decodeAudioData(data.slice(0));
     if (!opts.fromStore) saveTrack(file.name, data);
     transport.buffer = buf; transport.source = 'file'; transport.length = buf.duration; transport.pos = 0; transport.name = file.name;
-    analysis = analyzeBuffer(buf); $('bpm').value = analysis.bpm; $('offset').value = analysis.offset.toFixed(3); setTrackPalette(analysis.hue, analysis.ratio);
+    analysis = analyzeBuffer(buf); $('bpm').value = analysis.bpm; $('offset').value = analysis.offset.toFixed(3); setTrackPalette(analysis.hue / 360, analysis.ratio, analysis.bpm);
     $('analysisText').textContent = file.name + '\n' + analysis.text; $('analysis').hidden = false;
     const pr = PRESETS.find(x => x.match.test(file.name));
     if (pr) loadPreset(pr, analysis); else { let sheet; try { sheet = autoProgram(analysis); } catch (e) { console.error(e); sheet = '[\n  [1,' + Math.ceil(analysis.bars) + ',"section",{"name":"Auto-programmer failed · ' + String(e && e.message || e).replace(/"/g, "'") + '"}],\n  [1,' + Math.ceil(analysis.bars) + ',"reveal",{"level":1}],\n  [1,' + Math.ceil(analysis.bars) + ',"tob",{"i":0.5,"mode":"kick"}]\n]'; } SHEET = parseSheet(sheet).filter(q => q.look !== '//'); $('sheetText').value = sheet; $('sheetMsg').textContent = 'Auto-programmed ' + SHEET.length + ' cues from the analysis. Edit and apply, or load the Air show.'; }
@@ -2471,7 +2483,7 @@ $('immersive').addEventListener('click', () => setImmersive(!document.body.class
 $('track').addEventListener('change', async e => {
   const v = e.target.value; const was = transport.playing; pause();
   if (v === 'demo') { transport.source = 'demo'; transport.length = demoLength(); transport.pos = 0; $('bpm').value = 124; $('offset').value = '0.00'; SHEET = parseSheet(DEMO_SHEET).filter(q => q.look !== '//'); $('sheetText').value = DEMO_SHEET; $('src').textContent = 'Demo synth · 124 BPM'; if (was) play(); return; }
-  if (v === '__load') { await refreshTrackList(transport.source === 'file' ? transport.name : 'demo'); $('file').click(); return; }
+  if (v === '__load') { $('file').click(); await refreshTrackList(transport.source === 'file' ? transport.name : 'demo'); return; } // the picker has to open inside the user's click: an await first and the browser refuses it
   if (v === transport.name && transport.buffer) { transport.source = 'file'; transport.length = transport.buffer.duration; transport.pos = 0; if (was) play(); return; }
   const rec = await loadTrack(v); if (rec && rec.data) { ensureAudio(); await loadFile({ name: rec.name }, { data: rec.data, fromStore: true }); }
 });
@@ -2545,8 +2557,17 @@ window.__beamDbg = (kind, n = 0) => { const f = kind === 'front' ? R.FRONT[n] : 
 window.__frontBoost = (v = 3) => { R.FRONT.forEach(f => { f.bm.uniforms.uI.value = v; }); composer.render(); return R.FRONT[0].head.getWorldDirection(new THREE.Vector3()).toArray().map(x => +x.toFixed(2)); };
 window.__front = () => R.FRONT ? R.FRONT.map(f => [+f.bm.uniforms.uI.value.toFixed(2), +(f.tilt / DEG).toFixed(0), +(f.pan / DEG).toFixed(0), +S.frontI[R.FRONT.indexOf(f)].toFixed(2)]) : null;
 window.__noSheets = (on) => { R.LASER.forEach(l => { l.sm.uniforms.uI.value = on ? 0 : l.sm.uniforms.uI.value; l.beams.forEach(b => { if (on) { b.bm.uniforms.uI.value = 0; b.hm.uniforms.uI.value = 0; } }); }); composer.render(); };
+window.__render = (t0, dur, fps = 30, W = 1920, H = 1080, cam = 'foh', url = '/frame/') => { // offline render: every frame computed at exactly 1/fps, posted as JPEG to the local capture server
+  window.__rp = { k: 0, n: Math.round(dur * fps), done: false, err: null };
+  (async () => { try { pause(); autoCam = false; setCam(cam); document.body.classList.add('immersive'); renderer.setSize(W, H, false); composer.setSize(W, H); camera.aspect = W / H; camera.updateProjectionMatrix();
+    const dt = 1 / fps; for (let w = 0; w < 160; w++) { seek(t0 - 8 + w * 0.05); const { beat } = evalShow(now()); wallBeat = beat; applyS(0.05); applyRealLights(0.05); } // warm-up: the pods fly into place before the clip starts
+    for (let k = 0; k < window.__rp.n; k++) { const t = t0 + k * dt; seek(t); const { beat } = evalShow(t); wallBeat = beat; drawVideo(beat); applyS(dt); controls.update();
+      if (imagOn && k % 2 === 0) { renderer.setRenderTarget(imagRT); renderer.render(scene, imagCam); renderer.setRenderTarget(null); }
+      beamTime.value = t; animateConfetti(dt, t); const all = applyRealLights(dt); applyFog(all, S.haze * hazeUI); animateCrowd(beat, clamp(all + S.flash, 0, 1)); composer.render();
+      const blob = await new Promise(r => renderer.domElement.toBlob(r, 'image/jpeg', 0.92)); await fetch(url + String(k).padStart(5, '0') + '.jpg', { method: 'POST', body: blob }); window.__rp.k = k + 1; }
+  } catch (e) { window.__rp.err = String(e); } window.__rp.done = true; resize(); document.body.classList.remove('immersive'); })(); return window.__rp.n; };
 window.__step = (seconds, dt = 0.05) => { const t = actx ? now() : 0; for (let k = 0; k * dt < seconds; k++) { const { beat } = evalShow(t); wallBeat = beat; applyS(dt); const all = applyRealLights(dt); applyFog(all, S.haze * hazeUI); } composer.render(); return R.PODS.map(p => [+p.x.toFixed(1), +p.y.toFixed(1), +p.z.toFixed(1), +(p.tilt / DEG).toFixed(0), +(p.roll / DEG).toFixed(0)]); };
-window.__st = () => ({ gain: +S.gain.toFixed(2), reveal: S.revealSet ? +S.reveal.toFixed(2) : null, exposure: +exposure.toFixed(2), blackout: S.blackout, tobMax: +Math.max(...S.tobI).toFixed(2), barMax: +Math.max(...S.barI).toFixed(2), rivMax: +Math.max(...S.rivI).toFixed(2), whiteout: S.whiteout, flash: S.flash, sheets: R.LASER ? R.LASER.slice(0, 4).map(l => [l.sheet && l.sheet.visible, l.sm && +l.sm.uniforms.uI.value.toFixed(2), +S.laserSheet[0].toFixed(2)]) : null, pod0: R.PODS && R.PODS[0] && { free: R.PODS[0].free, x: +R.PODS[0].x.toFixed(2), y: +R.PODS[0].y.toFixed(2), z: +R.PODS[0].z.toFixed(2), tX: R.PODS[0].tX, tY: R.PODS[0].tY, tZ: R.PODS[0].tZ, tilt: +(R.PODS[0].tilt / DEG).toFixed(0), tTilt: +(R.PODS[0].tTilt / DEG).toFixed(0) }, fps: Math.round(fpsNow), refl: floorRefl.visible, imag: imagOn, tint: Array.from(S.tint), palette, label: curLabel, rig: R.name, reveal: S.reveal, gain: S.gain, blackout: S.blackout, exposure: renderer.toneMappingExposure, tobSum: +Array.from(S.tobI).reduce((a, b) => a + b, 0).toFixed(1), rivSum: +Array.from(S.rivI).reduce((a, b) => a + b, 0).toFixed(1), iris: S.iris, irisOpen: R.irisOpen, petal0: R.petals && [R.petals[0].rotation.x, R.petals[0].rotation.y, R.petals[0].rotation.z], petalPos: R.petals && R.petals[0].position.toArray(), sunPos: R.sunMat && rigs.orrery.group.children.find(o => o.material === R.sunMat)?.position.toArray() });
+window.__st = () => ({ scheme: PALETTES.track.scheme, hues: PALETTES.track.hues, gain: +S.gain.toFixed(2), reveal: S.revealSet ? +S.reveal.toFixed(2) : null, exposure: +exposure.toFixed(2), blackout: S.blackout, tobMax: +Math.max(...S.tobI).toFixed(2), barMax: +Math.max(...S.barI).toFixed(2), rivMax: +Math.max(...S.rivI).toFixed(2), whiteout: S.whiteout, flash: S.flash, sheets: R.LASER ? R.LASER.slice(0, 4).map(l => [l.sheet && l.sheet.visible, l.sm && +l.sm.uniforms.uI.value.toFixed(2), +S.laserSheet[0].toFixed(2)]) : null, pod0: R.PODS && R.PODS[0] && { free: R.PODS[0].free, x: +R.PODS[0].x.toFixed(2), y: +R.PODS[0].y.toFixed(2), z: +R.PODS[0].z.toFixed(2), tX: R.PODS[0].tX, tY: R.PODS[0].tY, tZ: R.PODS[0].tZ, tilt: +(R.PODS[0].tilt / DEG).toFixed(0), tTilt: +(R.PODS[0].tTilt / DEG).toFixed(0) }, fps: Math.round(fpsNow), refl: floorRefl.visible, imag: imagOn, tint: Array.from(S.tint), palette, label: curLabel, rig: R.name, reveal: S.reveal, gain: S.gain, blackout: S.blackout, exposure: renderer.toneMappingExposure, tobSum: +Array.from(S.tobI).reduce((a, b) => a + b, 0).toFixed(1), rivSum: +Array.from(S.rivI).reduce((a, b) => a + b, 0).toFixed(1), iris: S.iris, irisOpen: R.irisOpen, petal0: R.petals && [R.petals[0].rotation.x, R.petals[0].rotation.y, R.petals[0].rotation.z], petalPos: R.petals && R.petals[0].position.toArray(), sunPos: R.sunMat && rigs.orrery.group.children.find(o => o.material === R.sunMat)?.position.toArray() });
 (async () => {
   const last = await lastTrackName(); const names = await listTracks(); const pick = last && names.includes(last) ? last : names[0];
   if (pick) { const rec = await loadTrack(pick); if (rec && rec.data) { ensureAudio(); await loadFile({ name: rec.name }, { data: rec.data, fromStore: true }); return; } }
